@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Detection & Recognition for VAA Attendance</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 20px;
+    }
+    header {
+      background-color: #FF69B4;
+      color: black;
+      text-align: center;
+      padding: 20px 0;
+      margin-bottom: 30px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2em;
+    }
+    header p {
+      margin: 5px 0 0;
+      font-size: 1.2em;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .form-section {
+      text-align: center;
+      margin-bottom: 30px;
+      position: relative;
+    }
+    .form-section video {
+      width: 100%;
+      max-width: 640px;
+      height: auto;
+      border: 2px solid #007bff;
+    }
+
+    .form-section #stopBtn {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+      padding: 10px 20px;
+      font-size: 1.1em;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .form-section button#stopBtn.green {
+      background-color: #28a745;
+    }
+    .form-section img {
+      display: block;
+      margin: 20px auto;
+      max-width: 100%;
+      height: auto;
+      border: 2px solid #007bff;
+    }
+    
+    .form-section button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 1.1em;
+      background-color: #28a745; 
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .form-section button:hover {
+      background-color: #218838; 
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+    }
+    table, th, td {
+      border: 1px solid #dee2e6;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Face Detection & Recognition for VAA Attendance</h1>
+    <p>Group: 2 | Subject: Image Processing & Computer Vision</p>
+  </header>
+
+  <div class="container">
+    <div class="form-section">
+      <button id="stopBtn" class="green">Start Camera</button>
+      <video id="video" autoplay playsinline></video>
+      <img id="capturedImage" src="">
+
+      <div>
+        <button id="datasetBtn">Dataset</button>
+        <button id="trainingBtn">Training</button>
+        <button id="recognitionBtn">Face Recognition</button>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Student ID</th>
+          <th>Student Name</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody id="studentData">
+      </tbody>
+    </table>
+
+  </div>
+
+  <script>
+    let stream = null; 
+    const video = document.getElementById('video');
+    const stopBtn = document.getElementById('stopBtn');
+    let capturedImages = []; 
+
+    // Open the camera and start video
+    function startCamera() {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(s => {
+          stream = s; 
+          video.srcObject = stream;
+        })
+        .catch(err => {
+          console.error('Error accessing the camera: ', err);
+        });
+    }
+
+    function stopCamera() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null; // Clear video 
+        stream = null; 
+      }
+    }
+
+    // Handle start/stop camera button
+    stopBtn.addEventListener('click', function() {
+      if (stream) {
+        stopCamera();
+        stopBtn.textContent = 'Start Camera';
+        stopBtn.classList.add('green'); 
+      } else {
+        startCamera();
+        stopBtn.textContent = 'Stop Camera'; 
+        stopBtn.classList.remove('green');
+      }
+    });
+
+    // Capture images for dataset
+    document.getElementById('datasetBtn').addEventListener('click', function() {
+      if (!stream) {
+        alert('Camera is not running!');
+        return;
+      }
+      for (let i = 0; i < 30; i++) {
+        // Create a canvas to capture the current frame from the video
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert the image from canvas to Data URL (Base64)
+        const imageDataUrl = canvas.toDataURL();
+        capturedImages.push(imageDataUrl); 
+
+        console.log('Image captured:', imageDataUrl);
+      }
+
+      // Display the first captured image
+      if (capturedImages.length > 0) {
+        document.getElementById('capturedImage').src = capturedImages[0]; 
+      }
+    });
+
+    // Placeholder for Training and Recognition buttons
+    document.getElementById('trainingBtn').addEventListener('click', function() {
+      alert('Training initiated (this will connect to your backend)');
+    });
+
+    document.getElementById('recognitionBtn').addEventListener('click', function() {
+      alert('Face recognition initiated (this will connect to your backend)');
+    });
+  </script>
+
+</body>
+</html>
