@@ -1,51 +1,71 @@
 import cv2
 import mysql.connector
-import numpy as np
+
+def get_student_info(mssv):
+    """
+    Truy vấn MySQL để lấy tên và lớp học của sinh viên dựa trên MSSV.
+    """
+    mydb = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="",
+        database="nhom3_xla"
+    )
+    mycursor = mydb.cursor()
+    mycursor.execute("SELECT name, student_class FROM students WHERE mssv = %s", (mssv,))
+    result = mycursor.fetchone()
+    mydb.close()
+    return result
 
 def recognize_face():
+    """
+    Mở camera và nhận diện khuôn mặt trong thời gian thực bằng mô hình LBPH đã được huấn luyện.
+    """
+    # Khởi tạo bộ nhận diện khuôn mặt LBPH và tải mô hình đã huấn luyện
     recognizer = cv2.face.LBPHFaceRecognizer_create()
-    recognizer.read('trainer/trainer.yml')
-    face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+    recognizer.read('trainer/trainer.yml')  # Đảm bảo bạn đã có file 'trainer.yml' từ quá trình huấn luyện
 
-    cam = cv2.VideoCapture(0)
+    # Khởi tạo bộ phát hiện khuôn mặt
+    faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
     font = cv2.FONT_HERSHEY_SIMPLEX
 
+    # Mở camera
+    video_capture = cv2.VideoCapture(0)
+
     while True:
-        ret, frame = cam.read()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+        # Đọc từng khung hình từ camera
+        ret, frame = video_capture.read()
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # Chuyển khung hình sang grayscale
+        faces = faceCascade.detectMultiScale(gray, 1.2, 5)  # Phát hiện khuôn mặt
 
         for (x, y, w, h) in faces:
-            id, confidence = recognizer.predict(gray[y:y+h, x:x+w])
+            # Nhận diện khuôn mặt dựa trên mô hình LBPH
+            mssv, confidence = recognizer.predict(gray[y:y+h, x:x+w])
 
+            # Nếu độ tin cậy dưới 100 thì nhận diện thành công
             if confidence < 100:
-                # Kết nối tới MySQL để lấy thông tin sinh viên dựa vào MSSV
-                mydb = mysql.connector.connect(
-                    host="localhost",
-                    user="root",
-                    password="",
-                    database="nhom3_xla"
-                )
-                mycursor = mydb.cursor()
-                mycursor.execute("SELECT name, student_class FROM students WHERE mssv = %s", (id,))
-                result = mycursor.fetchone()
-
-                if result:
-                    name, student_class = result
-                    text = f"{name} - {student_class} (Confidence: {round(100 - confidence)}%)"
+                student_info = get_student_info(mssv)
+                if student_info:
+                    name, student_class = student_info
+                    confidence_text = f"{100 - confidence:.2f}%"
+                    display_text = f"Name: {name}, MSSV: {mssv}, Confidence: {confidence_text}"
                 else:
-                    text = "Unknown"
-
+                    display_text = "Unknown person"
             else:
-                text = "Unknown"
+                display_text = "Unknown person"
 
-            cv2.putText(frame, text, (x+5, y-5), font, 1, (255, 255, 255), 2)
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+            # Hiển thị thông tin nhận diện trên khung hình
+            cv2.putText(frame, display_text, (x, y - 10), font, 0.75, (255, 255, 255), 2)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-        cv2.imshow('Camera', frame)
+        # Hiển thị khung hình
+        cv2.imshow('Face Recognition', frame)
 
-        if cv2.waitKey(10) & 0xFF == ord('q'):
+        # Nhấn 'q' để thoát
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    cam.release()
+    # Giải phóng tài nguyên
+    video_capture.release()
     cv2.destroyAllWindows()
+

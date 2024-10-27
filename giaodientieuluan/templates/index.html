@@ -5,105 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Face Detection & Recognition for VAA Attendance</title>
   <style>
-    body {
-      font-family: 'Times New Roman', serif;
-      background-color: #f8f9fa;
-      margin: 0;
-      padding: 20px;
-    }
-    header {
-      background-color: #FF69B4;
-      color: black;
-      text-align: center;
-      padding: 20px 0;
-      margin-bottom: 30px;
-    }
-    header h1 {
-      margin: 0;
-      font-size: 2em;
-    }
-    header p {
-      margin: 5px 0 0;
-      font-size: 1.2em;
-    }
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      background: white;
-      padding: 20px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-    .form-section {
-      text-align: center;
-      margin-bottom: 30px;
-      position: relative;
-    }
-    .form-section video {
-      width: 100%;
-      max-width: 640px;
-      height: auto;
-      border: 2px solid #007bff;
-    }
+    body { font-family: 'Times New Roman', serif; background-color: #f8f9fa; margin: 0; padding: 20px; }
+    header { background-color: #FF69B4; color: black; text-align: center; padding: 20px 0; margin-bottom: 30px; }
+    header h1 { margin: 0; font-size: 2em; }
+    .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+    .form-section { text-align: center; margin-bottom: 30px; }
+    .form-section button { padding: 10px 20px; margin: 10px; font-size: 1.1em; background-color: #28a745; color: white; border: none; cursor: pointer; }
+    .form-section button:hover { background-color: #218838; }
 
-    .form-section #stopBtn {
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1;
-      padding: 10px 20px;
-      font-size: 1.1em;
-      background-color: #dc3545;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    .form-section button#stopBtn.green {
-      background-color: #28a745;
-    }
-    .form-section img {
-      display: block;
-      margin: 20px auto;
-      max-width: 100%;
-      height: auto;
-      border: 2px solid #007bff;
-    }
-    
-    .form-section button {
-      padding: 10px 20px;
-      margin: 10px;
-      font-size: 1.1em;
-      background-color: #28a745; 
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    .form-section button:hover {
-      background-color: #218838; 
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 30px;
-    }
-    table, th, td {
-      border: 1px solid #dee2e6;
-    }
-    th, td {
-      padding: 10px;
+    /* Style cho form nhập liệu */
+    .form-inputs {
+      display: none; /* Ban đầu ẩn form */
+      margin-top: 20px;
       text-align: center;
     }
-    th {
+    .form-inputs input {
+      padding: 10px;
+      margin: 5px;
+      font-size: 1em;
+      width: calc(100% - 22px); /* Để phù hợp với chiều rộng container */
+    }
+    .form-inputs button {
+      padding: 10px 20px;
+      margin: 10px 0;
+      font-size: 1.1em;
       background-color: #007bff;
       color: white;
+      border: none;
+      cursor: pointer;
     }
-    tr:nth-child(even) {
-      background-color: #f2f2f2;
+    .form-inputs button:hover {
+      background-color: #0056b3;
     }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 30px; }
+    th, td { padding: 10px; text-align: center; border: 1px solid #dee2e6; }
+    th { background-color: #007bff; color: white; }
   </style>
 </head>
 <body>
-
   <header>
     <h1>Face Detection & Recognition for VAA Attendance</h1>
     <p>Group: 2 | Subject: Image Processing & Computer Vision</p>
@@ -111,15 +51,17 @@
 
   <div class="container">
     <div class="form-section">
-      <button id="stopBtn" class="green">Start Camera</button>
-      <video id="video" autoplay playsinline></video>
-      <img id="capturedImage" src="">
+      <button id="datasetBtn">Dataset</button>
+      <button id="trainingBtn">Training</button>
+      <button id="recognitionBtn">Face Recognition</button>
+    </div>
 
-      <div>
-        <button id="datasetBtn">Dataset</button>
-        <button id="trainingBtn">Training</button>
-        <button id="recognitionBtn">Face Recognition</button>
-      </div>
+    <!-- Form nhập thông tin sinh viên, mặc định ẩn -->
+    <div class="form-inputs" id="inputForm">
+      <input type="text" id="mssv" placeholder="Enter Student ID (MSSV)">
+      <input type="text" id="name" placeholder="Enter Student Name">
+      <input type="text" id="student_class" placeholder="Enter Class">
+      <button id="saveDatasetBtn">Save Dataset</button>
     </div>
 
     <table>
@@ -133,84 +75,65 @@
       <tbody id="studentData">
       </tbody>
     </table>
-
   </div>
 
   <script>
-    let stream = null; 
-    const video = document.getElementById('video');
-    const stopBtn = document.getElementById('stopBtn');
-    let capturedImages = []; 
-
-    // Open the camera and start video
-    function startCamera() {
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(s => {
-          stream = s; 
-          video.srcObject = stream;
-        })
-        .catch(err => {
-          console.error('Error accessing the camera: ', err);
-        });
-    }
-
-    function stopCamera() {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        video.srcObject = null; // Clear video 
-        stream = null; 
-      }
-    }
-
-    // Handle start/stop camera button
-    stopBtn.addEventListener('click', function() {
-      if (stream) {
-        stopCamera();
-        stopBtn.textContent = 'Start Camera';
-        stopBtn.classList.add('green'); 
-      } else {
-        startCamera();
-        stopBtn.textContent = 'Stop Camera'; 
-        stopBtn.classList.remove('green');
-      }
+    document.getElementById('datasetBtn').addEventListener('click', function() {
+      // Hiển thị form nhập liệu khi nhấn vào Dataset
+      document.getElementById('inputForm').style.display = 'block';
     });
 
-    // Capture images for dataset
-    document.getElementById('datasetBtn').addEventListener('click', function() {
-      if (!stream) {
-        alert('Camera is not running!');
+    document.getElementById('saveDatasetBtn').addEventListener('click', function() {
+      // Lấy giá trị từ các input
+      const mssv = document.getElementById('mssv').value;
+      const name = document.getElementById('name').value;
+      const studentClass = document.getElementById('student_class').value;
+
+      // Kiểm tra input có hợp lệ không
+      if (!mssv || !name || !studentClass) {
+        alert('Please fill in all fields.');
         return;
       }
-      for (let i = 0; i < 30; i++) {
-        // Create a canvas to capture the current frame from the video
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Convert the image from canvas to Data URL (Base64)
-        const imageDataUrl = canvas.toDataURL();
-        capturedImages.push(imageDataUrl); 
 
-        console.log('Image captured:', imageDataUrl);
-      }
-
-      // Display the first captured image
-      if (capturedImages.length > 0) {
-        document.getElementById('capturedImage').src = capturedImages[0]; 
-      }
+      // Gửi dữ liệu đến server
+      fetch('/dataset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          mssv: mssv,
+          name: name,
+          student_class: studentClass,
+          images_data: [] // Mảng hình ảnh, nếu cần thực tế có thể thay thế bằng hình ảnh
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert(data.message);
+        // Ẩn form sau khi lưu thành công
+        document.getElementById('inputForm').style.display = 'none';
+        // Xóa nội dung các ô nhập liệu
+        document.getElementById('mssv').value = '';
+        document.getElementById('name').value = '';
+        document.getElementById('student_class').value = '';
+      })
+      .catch(error => console.error('Error:', error));
     });
 
-    // Placeholder for Training and Recognition buttons
     document.getElementById('trainingBtn').addEventListener('click', function() {
-      alert('Training initiated (this will connect to your backend)');
+      fetch('/train', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => alert(data.message))
+        .catch(error => console.error('Error:', error));
     });
 
     document.getElementById('recognitionBtn').addEventListener('click', function() {
-      alert('Face recognition initiated (this will connect to your backend)');
+      fetch('/recognize', { method: 'GET' })
+        .then(response => response.json())
+        .then(data => alert(data.message))
+        .catch(error => console.error('Error:', error));
     });
   </script>
-
 </body>
 </html>
