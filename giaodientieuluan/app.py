@@ -1,19 +1,28 @@
 import base64
-
+from datetime import datetime
+import pandas as pd
 import cv2
 import numpy as np
 from flask import Flask, render_template, request, jsonify
 from capture_face_module import capture_faces
 from train_model_module import train_model
-from recognize_face_module import recognize_face
+from recognize_face_module import capture_and_attend, recognize_face
 
 app = Flask(__name__)
 
+def extract_attendance():
+    """Đọc dữ liệu từ file CSV và trả về dưới dạng danh sách các từ điển."""
+    try:
+        today = datetime.now().strftime("%m_%d_%y")
+        df = pd.read_csv(f'Attendance/Attendance-{today}.csv')
+        return df.to_dict(orient='records')  # Chuyển DataFrame thành danh sách các từ điển
+    except FileNotFoundError:
+        return []  # Nếu file không tồn tại, trả về danh sách rỗng
 
 @app.route('/')
 def index():
-    return render_template('index.html')
-
+    attendance_data = extract_attendance()
+    return render_template('index.html', attendance_data=attendance_data)
 
 @app.route('/dataset', methods=['POST'])
 def dataset():
@@ -43,6 +52,13 @@ def recognize():
         print(f"Error during recognition: {e}")
         return jsonify({"error": str(e)}), 500
 
-
+@app.route('/attendance', methods=['POST'])
+def attendance():
+    name, mssv = capture_and_attend()
+    if name and mssv:
+        current_time = datetime.now().strftime("%H:%M:%S")
+        return jsonify({"success": True, "name": name, "mssv": mssv, "time": current_time})
+    else:
+        return jsonify({"success": False, "message": "No face recognized or failed to capture image."})
 if __name__ == '__main__':
     app.run(debug=True)

@@ -54,6 +54,7 @@
       <button id="datasetBtn">Dataset</button>
       <button id="trainingBtn">Training</button>
       <button id="recognitionBtn">Face Recognition</button>
+      <button id="attendanceBtn">Điểm danh</button>
     </div>
 
     <!-- Form nhập thông tin sinh viên, mặc định ẩn -->
@@ -67,17 +68,34 @@
     <table>
       <thead>
         <tr>
-          <th>Student ID</th>
-          <th>Student Name</th>
-          <th>Time</th>
+          <th>MSSV</th>
+          <th>Tên</th>
+          <th>Thời gian</th>
         </tr>
       </thead>
-      <tbody id="studentData">
+      <tbody id="attendanceTable">
       </tbody>
     </table>
   </div>
 
   <script>
+     const attendanceData = {{ attendance_data|tojson }};
+
+        // Hiển thị dữ liệu từ CSV trong bảng
+        function populateAttendanceTable(data) {
+            const tableBody = document.getElementById("attendanceTable");
+            tableBody.innerHTML = "";  // Xóa nội dung hiện tại của bảng
+
+            data.forEach(row => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td>${row.Name}</td><td>${row.Roll}</td><td>${row.Time}</td>`;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Gọi hàm hiển thị dữ liệu khi trang được tải
+        populateAttendanceTable(attendanceData);
+
     document.getElementById('datasetBtn').addEventListener('click', function() {
       // Hiển thị form nhập liệu khi nhấn vào Dataset
       document.getElementById('inputForm').style.display = 'block';
@@ -134,6 +152,21 @@
         .then(data => alert(data.message))
         .catch(error => console.error('Error:', error));
     });
+
+    document.getElementById("attendanceBtn").addEventListener("click", () => {
+            fetch("/attendance", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `<td>${data.name}</td><td>${data.mssv}</td><td>${data.time}</td>`;
+                        document.getElementById("attendanceTable").appendChild(row);
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+        });
   </script>
 </body>
 </html>
