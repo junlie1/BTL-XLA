@@ -48,7 +48,7 @@ def recognize_face():
                 if student_info:
                     name, student_class = student_info
                     confidence_text = f"{100 - confidence:.2f}%"
-                    display_text = f"Name: {name}, MSSV: {mssv}, Confidence: {confidence_text}"
+                    display_text = f"Name: {name}, MSSV: {mssv}"
                 else:
                     display_text = "Unknown person"
             else:
@@ -57,6 +57,8 @@ def recognize_face():
             # Hiển thị thông tin nhận diện trên khung hình
             cv2.putText(frame, display_text, (x, y - 10), font, 0.75, (255, 255, 255), 2)
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            # Hiển thị độ tin cậy (confidence) bên dưới hình chữ nhật
+            cv2.putText(frame, f"Confidence: {confidence_text}", (x, y + h + 20), font, 0.75, (255, 255, 255), 2)
 
         # Hiển thị khung hình
         cv2.imshow('Face Recognition', frame)
@@ -68,4 +70,3 @@ def recognize_face():
     # Giải phóng tài nguyên
     video_capture.release()
     cv2.destroyAllWindows()
-
