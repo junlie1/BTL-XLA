@@ -12,32 +12,10 @@
     .form-section { text-align: center; margin-bottom: 30px; }
     .form-section button { padding: 10px 20px; margin: 10px; font-size: 1.1em; background-color: #28a745; color: white; border: none; cursor: pointer; }
     .form-section button:hover { background-color: #218838; }
-
-    /* Style cho form nhập liệu */
-    .form-inputs {
-      display: none; /* Ban đầu ẩn form */
-      margin-top: 20px;
-      text-align: center;
-    }
-    .form-inputs input {
-      padding: 10px;
-      margin: 5px;
-      font-size: 1em;
-      width: calc(100% - 22px); /* Để phù hợp với chiều rộng container */
-    }
-    .form-inputs button {
-      padding: 10px 20px;
-      margin: 10px 0;
-      font-size: 1.1em;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    .form-inputs button:hover {
-      background-color: #0056b3;
-    }
-
+    .form-inputs { display: none; margin-top: 20px; text-align: center; }
+    .form-inputs input { padding: 10px; margin: 5px; font-size: 1em; width: calc(100% - 22px); }
+    .form-inputs button { padding: 10px 20px; margin: 10px 0; font-size: 1.1em; background-color: #007bff; color: white; border: none; cursor: pointer; }
+    .form-inputs button:hover { background-color: #0056b3; }
     table { width: 100%; border-collapse: collapse; margin-top: 30px; }
     th, td { padding: 10px; text-align: center; border: 1px solid #dee2e6; }
     th { background-color: #007bff; color: white; }
@@ -57,7 +35,6 @@
       <button id="attendanceBtn">Điểm danh</button>
     </div>
 
-    <!-- Form nhập thông tin sinh viên, mặc định ẩn -->
     <div class="form-inputs" id="inputForm">
       <input type="text" id="mssv" placeholder="Enter Student ID (MSSV)">
       <input type="text" id="name" placeholder="Enter Student Name">
@@ -79,41 +56,38 @@
   </div>
 
   <script>
-     const attendanceData = {{ attendance_data|tojson }};
+    const attendanceData = {{ attendance_data|tojson }};
 
-        // Hiển thị dữ liệu từ CSV trong bảng
-        function populateAttendanceTable(data) {
-            const tableBody = document.getElementById("attendanceTable");
-            tableBody.innerHTML = "";  // Xóa nội dung hiện tại của bảng
+    // Hiển thị dữ liệu từ CSV trong bảng
+    function populateAttendanceTable(data) {
+        const tableBody = document.getElementById("attendanceTable");
+        tableBody.innerHTML = "";  // Xóa nội dung hiện tại của bảng
 
-            data.forEach(row => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `<td>${row.Name}</td><td>${row.Roll}</td><td>${row.Time}</td>`;
-                tableBody.appendChild(tr);
-            });
-        }
+        data.forEach(row => {
+            const tr = document.createElement("tr");
+            // Đảm bảo rằng thời gian hiển thị bao gồm cả ngày, tháng và năm
+            tr.innerHTML = `<td>${row.Roll}</td><td>${row.Name}</td><td>${row.Time}</td>`;
+            tableBody.appendChild(tr);
+        });
+    }
 
-        // Gọi hàm hiển thị dữ liệu khi trang được tải
-        populateAttendanceTable(attendanceData);
+    // Gọi hàm hiển thị dữ liệu khi trang được tải
+    populateAttendanceTable(attendanceData);
 
     document.getElementById('datasetBtn').addEventListener('click', function() {
-      // Hiển thị form nhập liệu khi nhấn vào Dataset
       document.getElementById('inputForm').style.display = 'block';
     });
 
     document.getElementById('saveDatasetBtn').addEventListener('click', function() {
-      // Lấy giá trị từ các input
       const mssv = document.getElementById('mssv').value;
       const name = document.getElementById('name').value;
       const studentClass = document.getElementById('student_class').value;
 
-      // Kiểm tra input có hợp lệ không
       if (!mssv || !name || !studentClass) {
         alert('Please fill in all fields.');
         return;
       }
 
-      // Gửi dữ liệu đến server
       fetch('/dataset', {
         method: 'POST',
         headers: {
@@ -123,15 +97,13 @@
           mssv: mssv,
           name: name,
           student_class: studentClass,
-          images_data: [] // Mảng hình ảnh, nếu cần thực tế có thể thay thế bằng hình ảnh
+          images_data: []
         })
       })
       .then(response => response.json())
       .then(data => {
         alert(data.message);
-        // Ẩn form sau khi lưu thành công
         document.getElementById('inputForm').style.display = 'none';
-        // Xóa nội dung các ô nhập liệu
         document.getElementById('mssv').value = '';
         document.getElementById('name').value = '';
         document.getElementById('student_class').value = '';
@@ -154,19 +126,20 @@
     });
 
     document.getElementById("attendanceBtn").addEventListener("click", () => {
-            fetch("/attendance", { method: "POST" })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const row = document.createElement("tr");
-                        row.innerHTML = `<td>${data.name}</td><td>${data.mssv}</td><td>${data.time}</td>`;
-                        document.getElementById("attendanceTable").appendChild(row);
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => console.error("Error:", error));
-        });
+        fetch("/attendance", { method: "POST" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const row = document.createElement("tr");
+                    // Hiển thị tên, MSSV, và thời gian (bao gồm ngày/tháng/năm)
+                    row.innerHTML = `<td>${data.mssv}</td><td>${data.name}</td><td>${data.time}</td>`;
+                    document.getElementById("attendanceTable").appendChild(row);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+    });
   </script>
 </body>
 </html>

@@ -53,7 +53,7 @@ def recognize():
 
 @app.route('/attendance', methods=['POST'])
 def attendance():
-    name, mssv = capture_and_attend()
+    name, mssv, current_time = capture_and_attend()
     if name and mssv:
         current_time = datetime.now().strftime("%H:%M:%S")
         return jsonify({"success": True, "name": name, "mssv": mssv, "time": current_time})

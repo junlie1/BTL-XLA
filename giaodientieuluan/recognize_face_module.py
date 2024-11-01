@@ -10,7 +10,6 @@ client = MongoClient('mongodb://localhost:27017/')
 db = client['nhom2_xla']
 students_collection = db['students']
 
-
 # Hàm lấy thông tin sinh viên dựa trên MSSV
 def get_student_info(mssv):
     student = students_collection.find_one({"mssv": str(mssv)})
@@ -20,27 +19,29 @@ def get_student_info(mssv):
         print(f"No student found with MSSV: {mssv}")
     return None
 
-
 # Hàm lưu thông tin vào tệp điểm danh
 def save_attendance(name, mssv):
     today = datetime.now().strftime("%m_%d_%y")
-    filename = f'Attendance/Attendance-{today}.csv'
-    current_time = datetime.now().strftime("%H:%M:%S")
+    filename = f'Attendance/Attendance-{today}.csv'  # Giữ nguyên tên file theo ngày
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Định dạng ngày/tháng/năm và giờ
 
     if not os.path.exists('Attendance'):
         os.makedirs('Attendance')
 
     if os.path.exists(filename):
         df = pd.read_csv(filename)
-        if mssv not in df['Roll'].values:
+        # Cập nhật thời gian cho sinh viên đã điểm danh
+        if mssv in df['Roll'].values:
+            df.loc[df['Roll'] == mssv, 'Time'] = current_time  # Cập nhật thời gian mới
+        else:
             new_entry = pd.DataFrame([[name, mssv, current_time]], columns=['Name', 'Roll', 'Time'])
             df = pd.concat([df, new_entry], ignore_index=True)
     else:
+        # Nếu file chưa tồn tại, tạo mới
         df = pd.DataFrame([[name, mssv, current_time]], columns=['Name', 'Roll', 'Time'])
 
-    df.to_csv(filename, index=False)
+    df.to_csv(filename, index=False)  # Lưu lại file CSV
     print(f"Attendance for {name} (MSSV: {mssv}) recorded at {current_time}.")
-
 
 # Hàm nhận diện khuôn mặt từ video trực tiếp và hiển thị thông tin
 def recognize_face():
@@ -63,7 +64,7 @@ def recognize_face():
 
         for (x, y, w, h) in faces:
             # Nhận diện khuôn mặt trong khung đã phát hiện
-            face_id, confidence = recognizer.predict(gray[y:y + h, x:x + w])
+            face_id, confidence = recognizer.predict(gray[y:y+h, x:x+w])
             confidence_text = f"{100 - confidence:.2f}%"  # Độ tin cậy
 
             if confidence < 100:
@@ -102,7 +103,6 @@ def recognize_face():
     video_capture.release()
     cv2.destroyAllWindows()
 
-
 # Hàm chụp ảnh và lưu vào bảng điểm danh khi nhấn "Điểm danh"
 def capture_and_attend():
     video_capture = cv2.VideoCapture(0)
@@ -130,7 +130,7 @@ def capture_and_attend():
             student_info = get_student_info(face_id)
             if student_info:
                 name, student_class = student_info
-                save_attendance(name, face_id)
+                save_attendance(name, face_id)  # Lưu thông tin điểm danh
                 return name, face_id
 
     return None, None
