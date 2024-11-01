@@ -31,7 +31,6 @@ def dataset():
     name = data.get('name')
     student_class = data.get('student_class')
 
-    # Gọi hàm capture_faces và truyền các thông tin sinh viên
     result = capture_faces(mssv, name, student_class)
     return jsonify({"message": result})
 

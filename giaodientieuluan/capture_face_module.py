@@ -1,43 +1,33 @@
 import cv2
 import os
-import mysql.connector
+from pymongo import MongoClient
 from api import upload_image_to_firebase
 from datetime import datetime
 
 if not os.path.exists('temp'):
     os.makedirs('temp')
 
-def save_student_to_db(mssv, name, student_class):
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="nhom3_xla"
-    )
-    mycursor = mydb.cursor()
-    mycursor.execute("SELECT * FROM students WHERE mssv = %s", (mssv,))
-    result = mycursor.fetchone()
+client = MongoClient('mongodb://localhost:27017/')
+db = client['nhom2_xla']  # Tên database của bạn
+students_collection = db['students']
+images_collection = db['images']
 
-    if not result:
-        sql = "INSERT INTO students (mssv, name, student_class) VALUES (%s, %s, %s)"
-        val = (mssv, name, student_class)
-        mycursor.execute(sql, val)
-        mydb.commit()
-    mydb.close()
+def save_student_to_db(mssv, name, student_class):
+    student = {
+        "mssv": mssv,
+        "name": name,
+        "student_class": student_class
+    }
+    # Kiểm tra nếu sinh viên đã tồn tại
+    if students_collection.find_one({"mssv": mssv}) is None:
+        students_collection.insert_one(student)
 
 def save_image_to_db(mssv, image_link):
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="nhom3_xla"
-    )
-    mycursor = mydb.cursor()
-    sql = "INSERT INTO images (image_student, image) VALUES (%s, %s)"
-    val = (mssv, image_link)
-    mycursor.execute(sql, val)
-    mydb.commit()
-    mydb.close()
+    image_data = {
+        "image_student": mssv,
+        "image": image_link
+    }
+    images_collection.insert_one(image_data)
 
 def capture_faces(mssv, name, student_class):
     save_student_to_db(mssv, name, student_class)
